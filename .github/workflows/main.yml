@@ -9,6 +9,27 @@ jobs:
     timeout-minutes: 360
 
     steps:
+            - name: 0. Check Hardware Specifications
+        run: |
+          Write-Host "===== CPU ====="
+          Get-CimInstance Win32_Processor |
+            Select-Object Name, NumberOfCores, NumberOfLogicalProcessors
+
+          Write-Host "===== RAM ====="
+          $ram = Get-CimInstance Win32_ComputerSystem
+          Write-Host ("Total RAM: {0:N2} GB" -f ($ram.TotalPhysicalMemory / 1GB))
+
+          Write-Host "===== DISKS ====="
+          Get-CimInstance Win32_LogicalDisk -Filter "DriveType=3" |
+            Select-Object DeviceID,
+              @{Name="SizeGB";Expression={[math]::Round($_.Size / 1GB, 2)}},
+              @{Name="FreeGB";Expression={[math]::Round($_.FreeSpace / 1GB, 2)}}
+
+          Write-Host "===== GRAPHICS ====="
+          Get-CimInstance Win32_VideoController |
+            Select-Object Name, AdapterRAM, DriverVersion
+
+            
       - name: 1. Enable Remote Desktop & Firewall
         run: |
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
